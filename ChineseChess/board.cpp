@@ -1,6 +1,8 @@
 #include <QPainter>
 #include "board.h"
 #include <QMouseEvent>
+#include <QDebug>
+#include <QtMath>
 
 
 Board::Board(QWidget *parent) : QWidget(parent)
@@ -9,6 +11,7 @@ Board::Board(QWidget *parent) : QWidget(parent)
         this->_stone[i].init(i);
     }
     this->_selectid = -1;
+    isRedWalk = true;
 }
 
 
@@ -98,10 +101,106 @@ bool Board::getRowCol(QPoint pt, int& row, int& col){
     return false;
 }
 
+bool Board::canMoveJiang(int selectid, int row, int col, int killid){
+    /* xian ding sigongge*/
+    if(_stone[selectid]._red){
+        if(row>=3)return false;
+    }
+    else{
+        if(row<7)return false;
+    }
+    if(col<3||col>5)
+        return false;
+    int x_len = qAbs(_stone[selectid]._row - row);
+    int y_len = qAbs(_stone[selectid]._col - col);
+    if(x_len + y_len == 1)
+        return true;
+    return false;
+}
+bool Board::canMoveShi(int selectid, int row, int col, int killid){
+    if(_stone[selectid]._red){
+        if(row>=3)return false;
+    }
+    else{
+        if(row<7)return false;
+    }
+    if(col<3||col>5)
+        return false;
+    int x_len = qAbs(_stone[selectid]._row - row);
+    int y_len = qAbs(_stone[selectid]._col - col);
+    if(x_len==1 && y_len == 1)
+        return true;
+    return false;
+}
+bool Board::canMoveXiang(int selectid, int row, int col, int killid){
+    int x_len = qAbs(_stone[selectid]._row - row);
+    int y_len = qAbs(_stone[selectid]._col - col);
+    /* bie xiang yan */
+    if(x_len == 2 && y_len == 2)
+        return true;
+    return false;
+}
+bool Board::canMoveChe(int selectid, int row, int col, int killid){
+    return true;
+}
+bool Board::canMoveMa(int selectid, int row, int col, int killid){
+    return true;
+}
+bool Board::canMovePao(int selectid, int row, int col, int killid){
+    return true;
+}
+bool Board::canMoveBing(int selectid, int row, int col, int killid){
+    /* guo he keyi hengzhe zou row pos */
+    return true;
+}
+
+bool Board::judge(int selectid, int row, int col, int killid){
+    bool res = false;
+    switch (_stone[selectid]._type) {
+        case Stone::JIANG:
+            res = canMoveJiang(selectid, row, col, killid);
+            break;
+        case Stone::SHI:
+            res = canMoveShi(selectid, row, col, killid);
+            break;
+        case Stone::XIANG:
+            res = canMoveXiang(selectid, row, col, killid);
+            break;
+        case Stone::CHE:
+            res = canMoveChe(selectid, row, col, killid);
+            break;
+        case Stone::MA:
+            res = canMoveMa(selectid, row, col, killid);
+            break;
+        case Stone::PAO:
+            res = canMovePao(selectid, row, col, killid);
+            break;
+        case Stone::BING:
+            res = canMoveBing(selectid, row, col, killid);
+            break;
+    }
+    return res;
+}
+bool Board::canMove(int selectid, int row, int col, int clickid){
+    qDebug() << clickid << "\n";
+    if((clickid == -1)){
+        return judge(selectid, row, col, clickid);
+    }
+    if(_stone[selectid]._red == _stone[clickid]._red){
+        this->_selectid = clickid;
+        update();
+        return false;
+    }
+    else{
+        return judge(selectid, row, col, clickid);
+    }
+}
 void Board::mouseReleaseEvent(QMouseEvent* event){
     QPoint pt = event->pos();
     int row, col, i;
     bool bRet = this->getRowCol(pt, row, col);
+    if(!bRet)
+        return;
     int clickid = -1;
     for( i=0; i<32; i++){
         if(_stone[i]._row == row && _stone[i]._col == col && !_stone[i]._dead ){
@@ -114,19 +213,22 @@ void Board::mouseReleaseEvent(QMouseEvent* event){
     }
     if(this->_selectid == -1){
         if(clickid != -1){
-            _selectid = clickid;
-            update();
+            if(isRedWalk == _stone[clickid]._red){
+                _selectid = clickid;
+                update();
+            }
         }
     }
     else{
-        // zou bu, zuo jian cha
-        this->_stone[_selectid]._row = row;
-        this->_stone[_selectid]._col = col;
-        if(clickid != -1){
-            this->_stone[clickid]._dead = true;
+        if(canMove(_selectid, row, col, clickid)){
+            this->_stone[_selectid]._row = row;
+            this->_stone[_selectid]._col = col;
+            if(clickid != -1){
+                this->_stone[clickid]._dead = true;
+            }
+            this->_selectid = -1;
+            update();
+            isRedWalk = !isRedWalk;
         }
-        clickid = -1;
-        this->_selectid = -1;
-        update();
     }
 }
