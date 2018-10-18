@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 #include <QDebug>
 #include <QtMath>
+#include <iostream>
 
 
 Board::Board(QWidget *parent) : QWidget(parent)
@@ -77,27 +78,14 @@ void Board::drawStone(QPainter& painter, int id){
 
 
 bool Board::getRowCol(QPoint pt, int& row, int& col){
-    /* ceil and floor
-    zai qi pan nei
-    float x = pt.x();
-    float y = pt.y();
-    row = round(x);
-    col = round(y);
-    zai zuo ying she
-    */
-
-    for(row=0; row<=9; row++){
-        for(col=0; col<=8; col++){
-            QPoint c=  this->center(row, col);
-            int dx = c.x() - pt.x();
-            int dy = c.y() - pt.y();
-            int dist = dx*dx + dy*dy;
-            if(dist < (d/2)*(d/2)){
-                return true;
-            }
-        }
+    int x = pt.x();
+    int y = pt.y();
+    std::cout << x << ": " << y << std::endl;
+    if(d/2<=x && x<=9*d+d/2 && d/2<=y && y<=10*d+d/2){
+        col = (x%d<=d/2)?x/d-1:x/d;
+        row = (y%d<=d/2)?y/d-1:y/d;
+        return true;
     }
-    /* zai qi pan wai */
     return false;
 }
 
